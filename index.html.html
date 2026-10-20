@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#102a43">
+<title>テニス IN / OUT ジャッジ</title>
+<style>
+  :root {
+    --navy: #102a43;
+    --navy-2: #183f5b;
+    --teal: #16a6a1;
+    --mint: #d9f4ec;
+    --lime: #d8ef55;
+    --paper: #f3f7f8;
+    --ink: #18313d;
+    --muted: #69808b;
+    --line: #d7e2e6;
+    --red: #d94a55;
+    --green: #17865b;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; background: var(--paper); color: var(--ink); font-family: ui-rounded, system-ui, -apple-system, BlinkMacSystemFont, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif; }
+  button { font: inherit; }
+  .app { width: min(100%, 760px); min-height: 100dvh; margin: 0 auto; padding: max(18px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; }
+  header { display:flex; align-items:center; justify-content:space-between; gap:12px; color:var(--navy); margin-bottom:18px; }
+  .brand { display:flex; align-items:center; gap:10px; font-weight:900; letter-spacing:.02em; }
+  .brand-mark { display:grid; place-items:center; width:38px;height:38px;border-radius:13px;background:var(--lime);font-size:22px;box-shadow:0 3px 0 rgba(16,42,67,.12); }
+  .eyebrow { color:var(--teal); font-size:.74rem; font-weight:900; letter-spacing:.14em; text-transform:uppercase; }
+  .top-best { font-size:.8rem; color:var(--muted); text-align:right; }
+  .top-best strong { display:block; color:var(--navy); font-size:1.05rem; }
+  .panel { background:#fff; border:1px solid #e3ecef; border-radius:24px; box-shadow:0 12px 35px rgba(16,42,67,.07); overflow:hidden; }
+  .title-panel { padding:clamp(24px, 6vw, 42px); text-align:center; margin:auto 0; }
+  .hero-ball { width:94px;height:94px;display:grid;place-items:center;margin:0 auto 18px;border-radius:50%;background:var(--lime);font-size:52px;box-shadow:0 9px 0 #b6d32e;transform:rotate(-12deg); }
+  h1 { margin:0; color:var(--navy); font-size:clamp(2rem, 8vw, 3.3rem); line-height:1.04; letter-spacing:-.06em; }
+  h1 .slash { color:var(--teal); }
+  .lead { max-width:460px; margin:16px auto 22px; color:#58717d; line-height:1.8; font-size:.97rem; }
+  .rule-box { max-width:490px; text-align:left; margin:0 auto 24px; padding:16px 18px; background:#f2f8f7; border-radius:16px; }
+  .rule-box strong { display:block; color:var(--navy); margin-bottom:7px; }
+  .rule-box p { margin:0; color:#4e6874; font-size:.89rem; line-height:1.7; }
+  .rule-box b { color:var(--green); }
+  .primary, .answer, .secondary { cursor:pointer; border:0; transition:transform .12s ease, filter .12s ease; touch-action:manipulation; }
+  .primary:active, .answer:active, .secondary:active { transform:translateY(2px); }
+  .primary { background:var(--navy); color:white; border-radius:15px; min-height:56px; padding:0 28px; font-weight:900; font-size:1.03rem; box-shadow:0 5px 0 #071b2d; width:min(100%,360px); }
+  .primary:hover { filter:brightness(1.12); }
+  .keyboard-note { margin:15px 0 0; color:#81939b; font-size:.78rem; }
+  .mode-select { display:grid; gap:8px; text-align:left; max-width:490px; margin:0 auto 18px; }
+  .mode-select label { color:var(--navy); font-weight:850; font-size:.9rem; }
+  .mode-select select { width:100%; min-height:48px; border:1px solid #cbdde2; border-radius:13px; background:#fff; color:var(--navy); padding:0 12px; font:inherit; font-weight:750; }
+  .mode-note { color:var(--muted); font-size:.78rem; line-height:1.5; margin:0; }
+  .hidden { display:none !important; }
+  .game-layout { display:grid; gap:12px; }
+  .hud { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .stat { padding:10px 8px; border-radius:14px; background:#fff; border:1px solid #e3ecef; text-align:center; }
+  .stat span { display:block; color:var(--muted); font-weight:800; font-size:.7rem; }
+  .stat strong { display:block; color:var(--navy); font-size:1.2rem; line-height:1.4; font-variant-numeric:tabular-nums; }
+  .stat.danger strong { color:var(--red); }
+  .court-panel { padding:10px; background:var(--navy); border-radius:22px; box-shadow:0 12px 26px rgba(16,42,67,.15); }
+  canvas { display:block; width:100%; height:auto; aspect-ratio: 4 / 5; border-radius:15px; background:#287c79; }
+  .timer-wrap { height:8px; border-radius:20px; overflow:hidden; background:#dfe9ec; margin:12px 2px 0; }
+  .timer-bar { height:100%; width:100%; border-radius:20px; background:var(--lime); transition:width .05s linear; }
+  .timer-label { display:flex; align-items:center; justify-content:space-between; color:#81949c; font-size:.74rem; margin:6px 3px 0; }
+  .call-card { background:#fff; border:1px solid #e3ecef; border-radius:18px; padding:14px; }
+  .call-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; }
+  .call-question { font-size:1rem; font-weight:900; color:var(--navy); }
+  .call-hint { color:var(--muted); font-size:.75rem; }
+  .answer-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .answer { border-radius:15px; color:white; min-height:62px; font-size:1.15rem; font-weight:1000; letter-spacing:.03em; box-shadow:0 4px 0 rgba(0,0,0,.12); }
+  .answer small { display:block; font-size:.7rem; opacity:.83; font-weight:700; letter-spacing:0; margin-top:2px; }
+  .in-btn { background:#16a66d; }
+  .out-btn { background:#db5360; }
+  .answer:disabled { opacity:.45; cursor:default; filter:grayscale(.25); }
+  .feedback { min-height:30px; text-align:center; font-weight:900; padding:8px 4px 0; color:var(--muted); }
+  .feedback.good { color:var(--green); }
+  .feedback.bad { color:var(--red); }
+  .review-panel { background:#fff; border:1px solid #e3ecef; border-radius:18px; padding:14px; }
+  .review-panel h3 { margin:0 0 10px; color:var(--navy); font-size:1rem; }
+  .review-list { display:grid; gap:8px; max-height:280px; overflow:auto; }
+  .review-item { display:grid; grid-template-columns:42px 1fr auto; gap:8px; align-items:center; padding:9px 10px; border-radius:12px; background:#f2f7f8; font-size:.82rem; }
+  .review-item button { border:0; background:var(--navy); color:white; border-radius:9px; padding:8px 10px; min-height:40px; font-weight:800; }
+  .review-item .result-in { color:var(--green); font-weight:900; }
+  .review-item .result-out { color:var(--red); font-weight:900; }
+  .end-panel { padding:30px 22px; text-align:center; margin:auto 0; }
+  .end-icon { font-size:48px; margin-bottom:8px; }
+  .end-panel h2 { color:var(--navy); font-size:2rem; margin:0 0 8px; }
+  .end-panel p { color:var(--muted); margin:0 0 22px; line-height:1.7; }
+  .result-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:9px; max-width:420px; margin:0 auto 24px; }
+  .result-item { background:#f1f7f7; border-radius:15px; padding:14px 8px; }
+  .result-item span { display:block; font-size:.75rem; color:var(--muted); }
+  .result-item strong { display:block; font-size:1.55rem; color:var(--navy); }
+  .end-actions { display:grid; gap:10px; justify-items:center; }
+  .secondary { width:min(100%,360px); min-height:48px; background:#ecf2f4; color:var(--navy); border-radius:14px; font-weight:850; }
+  footer { text-align:center; color:#99a9af; font-size:.72rem; padding:18px 0 0; line-height:1.6; }
+  @media (min-width:600px) { .app { padding-left:24px; padding-right:24px; } .game-layout { grid-template-columns:minmax(0,1fr); } .court-panel { padding:14px; } canvas { max-height:64dvh; width:auto; max-width:100%; margin:0 auto; } }
+  @media (max-width:600px) {
+    .app { padding: max(10px, env(safe-area-inset-top)) 10px max(12px, env(safe-area-inset-bottom)); }
+    header { margin-bottom:12px; }
+    .brand-mark { width:34px; height:34px; }
+    .title-panel { padding:24px 16px; }
+    .hero-ball { width:74px; height:74px; font-size:42px; margin-bottom:14px; }
+    .lead { font-size:.91rem; margin:12px auto 16px; }
+    .rule-box { padding:12px 14px; margin-bottom:16px; }
+    .game-layout { gap:9px; }
+    .hud { grid-template-columns:repeat(4,minmax(0,1fr)); gap:5px; }
+    .stat { padding:7px 3px; border-radius:11px; }
+    .stat span { font-size:.64rem; }
+    .stat strong { font-size:1.05rem; }
+    .court-panel { padding:7px; border-radius:17px; }
+    canvas { aspect-ratio:4 / 4.7; max-height:none; width:100%; }
+    .call-card { padding:11px; }
+    .call-head { margin-bottom:8px; }
+    .answer { min-height:68px; font-size:1.12rem; }
+    .answer small { font-size:.66rem; }
+    .feedback { min-height:28px; font-size:.88rem; }
+    .timer-wrap { margin-top:8px; }
+    .end-panel { padding:24px 14px; }
+    .review-item { padding:8px; font-size:.76rem; }
+  }
+  @media (max-width:380px) { .app { padding-left:8px; padding-right:8px; } .answer { min-height:64px; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand"><div class="brand-mark">🎾</div><div><div class="eyebrow">UMPIRE CHALLENGE</div><div>IN / OUT ジャッジ</div></div></div>
+    <div class="top-best">自己ベスト<strong id="headerBest">0 点</strong></div>
+  </header>
+
+  <main id="titleScreen" class="panel title-panel">
+    <div class="hero-ball">🎾</div>
+    <div class="eyebrow" style="margin-bottom:10px">CALL IT RIGHT</div>
+    <h1>IN <span class="slash">/</span> OUT</h1>
+    <p class="lead">キミの目でジャッジせよ。<br>ボールはラインにかかっている？ それともアウト？</p>
+    <div class="rule-box">
+      <strong>🎯 判定ルール</strong>
+      <p>ボールの<b>一部でもラインに触れていれば「IN」</b>。ボール全体がラインの外なら「OUT」。着地したら、制限時間内にコールしよう！</p>
+    </div>
+    <div class="mode-select">
+      <label for="difficulty">難易度を選択</label>
+      <select id="difficulty">
+        <option value="easy">初級 — 判定時間 3.0秒・ライン際少なめ</option>
+        <option value="normal" selected>中級 — 判定時間 2.1秒・標準</option>
+        <option value="hard">上級 — 判定時間 1.4秒・際どい判定多め</option>
+        <option value="pro">プロ — 判定時間 1.0秒・際どい判定中心</option>
+      </select>
+      <p class="mode-note" id="difficultyNote">慣れてきたら上級・プロに挑戦しよう。</p>
+    </div>
+    <button class="primary" id="startButton">ゲームスタート　▶</button>
+    <p class="keyboard-note">スマホは大きなIN／OUTボタンで操作 ／ PCは I：IN・O：OUT</p>
+  </main>
+
+  <main id="gameScreen" class="game-layout hidden">
+    <section class="hud" aria-label="ゲーム状況">
+      <div class="stat"><span>スコア</span><strong id="score">0</strong></div>
+      <div class="stat"><span>正解</span><strong id="correct">0</strong></div>
+      <div class="stat danger"><span>誤審</span><strong id="errors">0 / 3</strong></div>
+      <div class="stat"><span>第何球</span><strong id="round">1</strong></div>
+    </section>
+    <section class="court-panel">
+      <canvas id="court" width="480" height="600" aria-label="テニスコートとボールの着地点"></canvas>
+      <div class="timer-wrap"><div id="timerBar" class="timer-bar"></div></div>
+      <div class="timer-label"><span id="phaseLabel">着地点を見て判定！</span><span id="timerText">2.0 秒</span></div>
+    </section>
+    <section class="call-card">
+      <div class="call-head"><div class="call-question">このボールは…？</div><div class="call-hint">迷わずコール！</div></div>
+      <div class="answer-row">
+        <button class="answer in-btn" id="inButton" disabled>IN <small>ラインに触れたらIN</small></button>
+        <button class="answer out-btn" id="outButton" disabled>OUT <small>完全に外ならOUT</small></button>
+      </div>
+      <div id="feedback" class="feedback" aria-live="polite">ボールを目で追おう！</div>
+    </section>
+    <section id="reviewPanel" class="review-panel hidden">
+      <h3>🔎 リプレイ確認</h3>
+      <p class="mode-note">判定後、直近の着地点を拡大して確認できます。</p>
+      <div id="reviewList" class="review-list"></div>
+    </section>
+  </main>
+
+  <main id="replayScreen" class="panel end-panel hidden">
+    <div class="eyebrow">REPLAY REVIEW</div>
+    <h2 style="margin:6px 0 8px;color:var(--navy)">リプレイ確認</h2>
+    <p id="replayDescription">着地点を確認しよう。</p>
+    <section class="court-panel" style="margin:12px 0">
+      <canvas id="replayCourt" width="480" height="600" aria-label="リプレイの着地点"></canvas>
+    </section>
+    <div class="result-grid">
+      <div class="result-item"><span>正解</span><strong id="replayAnswer">IN</strong></div>
+      <div class="result-item"><span>あなたの判定</span><strong id="replayCall">OUT</strong></div>
+    </div>
+    <div class="end-actions"><button class="primary" id="backReplayButton">ゲームに戻る</button></div>
+  </main>
+
+  <main id="endScreen" class="panel end-panel hidden">
+    <div class="end-icon" id="endIcon">🧑‍⚖️</div>
+    <div class="eyebrow">MATCH OVER</div>
+    <h2 id="endTitle">ゲーム終了！</h2>
+    <p id="endMessage">3回の誤審で試合終了。</p>
+    <div class="result-grid">
+      <div class="result-item"><span>最終スコア</span><strong id="finalScore">0</strong></div>
+      <div class="result-item"><span>正解率</span><strong id="accuracy">0%</strong></div>
+      <div class="result-item"><span>正解数</span><strong id="finalCorrect">0</strong></div>
+      <div class="result-item"><span>際どい判定の正解</span><strong id="closeAccuracy">0 / 0</strong></div>
+    </div>
+    <section class="review-panel" style="margin:0 0 18px;text-align:left">
+      <h3>🔎 判定リプレイ</h3>
+      <p class="mode-note">各球の「再生」から着地点を見直せます。</p>
+      <div id="endReviewList" class="review-list"></div>
+    </section>
+    <div class="end-actions">
+      <button class="primary" id="againButton">同じ難易度でもう一度　↻</button>
+      <button class="secondary" id="titleButton">難易度選択へ戻る</button>
+    </div>
+  </main>
+  <footer>※ 練習用の簡易シミュレーションです。実際のテニスの判定を完全に再現するものではありません。</footer>
+</div>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const titleScreen = $('titleScreen'), gameScreen = $('gameScreen'), endScreen = $('endScreen'), replayScreen = $('replayScreen');
+  const canvas = $('court'), ctx = canvas.getContext('2d');
+  const replayCanvas = $('replayCourt'), replayCtx = replayCanvas.getContext('2d');
+  const inButton = $('inButton'), outButton = $('outButton');
+  let totalTime = 2100, difficulty = 'normal';
+  const difficultySettings = {
+    easy: { time: 3000, close: .28 }, normal: { time: 2100, close: .48 },
+    hard: { time: 1400, close: .66 }, pro: { time: 1000, close: .80 }
+  };
+  let history = [], replayReturnPhase = 'game';
+  let phase = 'title', score = 0, correct = 0, errors = 0, rounds = 0;
+  let closeTotal = 0, closeCorrect = 0, answeredTotal = 0, streak = 0;
+  let current = null, deadline = 0, flightStart = 0, lastTimestamp = 0, nextTimer = null;
+  let W = 480, H = 600, scale = 1;
+  let best = readBest();
+  $('headerBest').textContent = `${best} 点`;
+
+  function readBest() { try { return Number(localStorage.getItem('tennisInOutBest') || 0); } catch (_) { return 0; } }
+  function saveBest(value) { try { localStorage.setItem('tennisInOutBest', String(value)); } catch (_) {} }
+  function showScreen(which) {
+    titleScreen.classList.toggle('hidden', which !== 'title');
+    gameScreen.classList.toggle('hidden', which !== 'game');
+    endScreen.classList.toggle('hidden', which !== 'end');
+    replayScreen.classList.toggle('hidden', which !== 'replay');
+  }
+  function courtBounds() { return { left: W * .145, right: W * .855, top: H * .085, bottom: H * .915 }; }
+  function resizeCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || phase === 'title') return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    W = rect.width; H = rect.height; scale = W / 480;
+    drawScene(performance.now());
+  }
+  function ballRadius() { return Math.max(7.5, W * .021); }
+
+  function startGame() {
+    if (nextTimer) clearTimeout(nextTimer);
+    difficulty = $('difficulty').value;
+    totalTime = difficultySettings[difficulty].time;
+    history = []; $('reviewPanel').classList.add('hidden'); $('reviewList').innerHTML = '';
+    score = 0; correct = 0; errors = 0; rounds = 0; closeTotal = 0; closeCorrect = 0; answeredTotal = 0; streak = 0;
+    current = null; phase = 'flight';
+    showScreen('game');
+    updateHud();
+    requestAnimationFrame(() => { resizeCanvas(); nextRound(); });
+  }
+  function generateShot() {
+    const b = courtBounds(), r = ballRadius();
+    // As the score climbs, a greater share of shots land close to the line.
+    const progression = Math.min(.18, Math.max(0, (rounds - 2) / 12) * .18);
+    const closeChance = Math.min(.92, difficultySettings[difficulty].close + progression);
+    const roll = Math.random();
+    let offset;
+    if (roll < closeChance) {
+      offset = (Math.random() * 3.2 - 1.6) * r; // close call, from just outside to just inside
+    } else if (roll < closeChance + .20) {
+      offset = r * (1.3 + Math.random() * (2.1 + progression)); // clearly in
+    } else if (roll < .94) {
+      offset = -r * (1.25 + Math.random() * (2.3 + progression)); // clearly out
+    } else {
+      offset = r * (3 + Math.random() * 2.5); // comfortable IN
+    }
+    const edges = ['left', 'right', 'top', 'bottom'];
+    const edge = edges[Math.floor(Math.random() * edges.length)];
+    let x, y;
+    if (edge === 'left') { x = b.left + offset; y = b.top + (b.bottom - b.top) * (.18 + Math.random() * .64); }
+    if (edge === 'right') { x = b.right - offset; y = b.top + (b.bottom - b.top) * (.18 + Math.random() * .64); }
+    if (edge === 'top') { y = b.top + offset; x = b.left + (b.right - b.left) * (.18 + Math.random() * .64); }
+    if (edge === 'bottom') { y = b.bottom - offset; x = b.left + (b.right - b.left) * (.18 + Math.random() * .64); }
+    // The ball is IN when any part of its circular footprint reaches the inside edge of the boundary line.
+    const isIn = x >= b.left - r && x <= b.right + r && y >= b.top - r && y <= b.bottom + r;
+    const near = Math.min(Math.abs(x - b.left), Math.abs(x - b.right), Math.abs(y - b.top), Math.abs(y - b.bottom)) <= r * 1.65;
+    const safeX = W * .5 + (Math.random() - .5) * W * .1;
+    const safeY = H * .5 + (Math.random() - .5) * H * .1;
+    return { x, y, isIn, close: near, edge, startX: safeX, startY: safeY, landed: false };
+  }
+  function nextRound() {
+    if (errors >= 3) { endGame(); return; }
+    rounds++;
+    current = generateShot();
+    phase = 'flight';
+    flightStart = performance.now();
+    deadline = 0;
+    $('feedback').textContent = 'ボールを目で追おう！';
+    $('feedback').className = 'feedback';
+    $('phaseLabel').textContent = 'ボールの着地点を確認！';
+    $('timerText').textContent = '準備…';
+    $('timerBar').style.width = '100%';
+    inButton.disabled = true; outButton.disabled = true;
+    updateHud();
+    if (canvas.clientWidth) resizeCanvas();
+    requestAnimationFrame(loop);
+  }
+  function updateHud() {
+    $('score').textContent = score.toLocaleString('ja-JP');
+    $('correct').textContent = correct;
+    $('errors').textContent = `${errors} / 3`;
+    $('round').textContent = rounds || 1;
+  }
+  function enableCalls(on) { inButton.disabled = !on; outButton.disabled = !on; }
+  function call(choice) {
+    if (phase !== 'judge' || !current) return;
+    const now = performance.now();
+    const remain = Math.max(0, deadline - now);
+    const answer = choice === current.isIn;
+    phase = 'result';
+    answeredTotal++;
+    enableCalls(false);
+    if (current.close) closeTotal++;
+    if (answer) {
+      correct++; streak++;
+      const speedBonus = Math.round(50 * (remain / totalTime));
+      const closeBonus = current.close ? 50 : 0;
+      const gain = 100 + speedBonus + closeBonus;
+      score += gain;
+      if (current.close) closeCorrect++;
+      $('feedback').textContent = `正解！ +${gain} 点${current.close ? '（際どい判定ボーナス！）' : ''}`;
+      $('feedback').className = 'feedback good';
+      $('phaseLabel').textContent = 'NICE CALL!';
+    } else {
+      errors++; streak = 0;
+      $('feedback').textContent = `誤審！ 正解は ${current.isIn ? 'IN' : 'OUT'}…`;
+      $('feedback').className = 'feedback bad';
+      $('phaseLabel').textContent = 'WRONG CALL';
+    }
+    updateHud();
+    if (score > best) { best = score; saveBest(best); $('headerBest').textContent = `${best} 点`; }
+    $('timerText').textContent = '判定済み';
+    $('timerBar').style.width = `${remain / totalTime * 100}%`;
+    recordRound(choice ? 'IN' : 'OUT', answer, false);
+    nextTimer = setTimeout(() => errors >= 3 ? endGame() : nextRound(), 950);
+  }
+  function timeoutCall() {
+    if (phase !== 'judge') return;
+    phase = 'result'; errors++; answeredTotal++; streak = 0;
+    enableCalls(false);
+    $('feedback').textContent = `タイムアップ！ 正解は ${current.isIn ? 'IN' : 'OUT'}`;
+    $('feedback').className = 'feedback bad';
+    $('phaseLabel').textContent = 'TIME UP';
+    $('timerText').textContent = '0.0 秒'; $('timerBar').style.width = '0%';
+    updateHud();
+    recordRound(null, false, true);
+    nextTimer = setTimeout(() => errors >= 3 ? endGame() : nextRound(), 950);
+  }
+  function recordRound(choice, answer, timedOut) {
+    if (!current) return;
+    const item = { round: rounds, x: current.x, y: current.y, gameW: W, gameH: H,
+      isIn: current.isIn, close: current.close, choice, answer, timedOut, edge: current.edge };
+    history.push(item); if (history.length > 30) history.shift();
+    $('reviewPanel').classList.remove('hidden');
+    renderReviewList('reviewList'); renderReviewList('endReviewList');
+  }
+  function renderReviewList(containerId) {
+    const container = $(containerId); if (!container) return;
+    container.innerHTML = '';
+    history.slice().reverse().forEach((h) => {
+      const row = document.createElement('div'); row.className = 'review-item';
+      const badge = document.createElement('strong'); badge.textContent = `#${h.round}`;
+      const detail = document.createElement('div');
+      const trueLabel = document.createElement('span'); trueLabel.className = h.isIn ? 'result-in' : 'result-out'; trueLabel.textContent = `正解 ${h.isIn ? 'IN' : 'OUT'}`;
+      const sub = document.createElement('div'); sub.textContent = `${h.timedOut ? 'タイムアップ' : `判定 ${h.choice}`}${h.close ? ' ・際どい' : ''}`;
+      detail.append(trueLabel, sub);
+      const btn = document.createElement('button'); btn.textContent = '再生'; btn.setAttribute('aria-label', `${h.round}球目のリプレイを確認`);
+      btn.addEventListener('click', () => showReplay(h)); row.append(badge, detail, btn); container.appendChild(row);
+    });
+  }
+  function showReplay(item) {
+    if (nextTimer) clearTimeout(nextTimer);
+    replayReturnPhase = phase === 'end' ? 'end' : 'game'; phase = 'replay'; showScreen('replay');
+    $('replayDescription').textContent = `${item.round}球目：${item.close ? 'ライン際の際どい着地点' : '着地点'}を確認。`;
+    $('replayAnswer').textContent = item.isIn ? 'IN' : 'OUT';
+    $('replayCall').textContent = item.timedOut ? 'タイムアップ' : item.choice;
+    $('replayCall').style.color = item.answer ? 'var(--green)' : 'var(--red)'; drawReplay(item);
+  }
+  function drawReplay(item) {
+    const rect = replayCanvas.getBoundingClientRect(); if (!rect.width) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    replayCanvas.width = Math.round(rect.width*dpr); replayCanvas.height = Math.round(rect.height*dpr);
+    replayCtx.setTransform(dpr,0,0,dpr,0,0);
+    const rw=rect.width, rh=rect.height, b={left:rw*.145,right:rw*.855,top:rh*.085,bottom:rh*.915};
+    replayCtx.clearRect(0,0,rw,rh); const bg=replayCtx.createLinearGradient(0,0,rw,rh);
+    bg.addColorStop(0,'#319b8e'); bg.addColorStop(1,'#1e716e'); replayCtx.fillStyle=bg; replayCtx.fillRect(0,0,rw,rh);
+    replayCtx.fillStyle='#216c83'; replayCtx.fillRect(b.left,b.top,b.right-b.left,b.bottom-b.top);
+    replayCtx.strokeStyle='#f7ffff'; replayCtx.lineWidth=Math.max(2.5,rw*.007); replayCtx.strokeRect(b.left,b.top,b.right-b.left,b.bottom-b.top);
+    const x=item.x/item.gameW*rw, y=item.y/item.gameH*rh, r=Math.max(7.5,rw*.021);
+    replayCtx.strokeStyle='rgba(255,255,255,.9)'; replayCtx.lineWidth=2; replayCtx.setLineDash([4,4]); replayCtx.beginPath(); replayCtx.arc(x,y,r*1.8,0,Math.PI*2); replayCtx.stroke(); replayCtx.setLineDash([]);
+    replayCtx.fillStyle='rgba(5,30,38,.27)'; replayCtx.beginPath(); replayCtx.ellipse(x+2*r*.18,y+r*.65,r*.95,r*.43,-.16,0,Math.PI*2); replayCtx.fill();
+    const g=replayCtx.createRadialGradient(x-r*.3,y-r*.35,r*.15,x,y,r*1.25); g.addColorStop(0,'#f6ffad'); g.addColorStop(.7,'#d9ef55'); g.addColorStop(1,'#a5c72e');
+    replayCtx.fillStyle=g; replayCtx.beginPath(); replayCtx.arc(x,y,r,0,Math.PI*2); replayCtx.fill();
+    replayCtx.strokeStyle='#fff'; replayCtx.lineWidth=Math.max(1.3,r*.18); replayCtx.beginPath(); replayCtx.arc(x-r*.1,y,r*.73,-Math.PI*.72,Math.PI*.06); replayCtx.stroke(); replayCtx.beginPath(); replayCtx.arc(x+r*.1,y,r*.73,Math.PI*.28,Math.PI*1.06); replayCtx.stroke();
+    replayCtx.fillStyle='#fff'; replayCtx.font=`900 ${Math.max(13,rw*.04)}px system-ui`; replayCtx.textAlign='center'; replayCtx.fillText(item.isIn?'IN':'OUT',x,Math.max(22,y-r*2.5));
+  }
+  function endGame() {
+    if (nextTimer) clearTimeout(nextTimer);
+    phase = 'end'; enableCalls(false); showScreen('end');
+    $('endIcon').textContent = correct >= 8 ? '🏆' : '🎾';
+    $('endTitle').textContent = correct >= 8 ? 'ナイスジャッジ！' : 'ゲーム終了！';
+    $('endMessage').textContent = `全${rounds}球を判定。誤審が${errors}回になりました。`;
+    $('finalScore').textContent = score.toLocaleString('ja-JP');
+    $('accuracy').textContent = `${answeredTotal ? Math.round(correct / answeredTotal * 100) : 0}%`;
+    $('finalCorrect').textContent = correct;
+    $('closeAccuracy').textContent = `${closeCorrect} / ${closeTotal}`;
+  }
+  function drawCourt() {
+    const b = courtBounds();
+    // court background and subtle surface stripes
+    ctx.clearRect(0, 0, W, H);
+    const bg = ctx.createLinearGradient(0, 0, W, H);
+    bg.addColorStop(0, '#319b8e'); bg.addColorStop(1, '#1e716e');
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,.045)'; ctx.lineWidth = 1;
+    for (let i = 0; i < 14; i++) { const y = H * .04 + i * H * .07; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+    ctx.restore();
+    // doubles court boundaries
+    ctx.fillStyle = '#216c83'; ctx.fillRect(b.left, b.top, b.right-b.left, b.bottom-b.top);
+    ctx.strokeStyle = '#f7ffff'; ctx.lineWidth = Math.max(2.5, W * .007); ctx.lineJoin = 'round';
+    ctx.strokeRect(b.left, b.top, b.right-b.left, b.bottom-b.top);
+    const singlesL = b.left + (b.right-b.left)*.105, singlesR = b.right - (b.right-b.left)*.105;
+    ctx.lineWidth = Math.max(1.7, W * .004);
+    ctx.beginPath(); ctx.moveTo(singlesL,b.top); ctx.lineTo(singlesL,b.bottom); ctx.moveTo(singlesR,b.top); ctx.lineTo(singlesR,b.bottom); ctx.stroke();
+    const serviceTop = b.top + (b.bottom-b.top)*.32, serviceBottom = b.bottom - (b.bottom-b.top)*.32, midX=(b.left+b.right)/2;
+    ctx.beginPath(); ctx.moveTo(b.left,serviceTop); ctx.lineTo(b.right,serviceTop); ctx.moveTo(b.left,serviceBottom); ctx.lineTo(b.right,serviceBottom); ctx.moveTo(midX,serviceTop); ctx.lineTo(midX,serviceBottom); ctx.stroke();
+    // net
+    ctx.fillStyle = 'rgba(7,36,50,.30)'; ctx.fillRect(b.left-1, H*.498, b.right-b.left+2, H*.014);
+    ctx.strokeStyle = 'rgba(255,255,255,.72)'; ctx.lineWidth=1.1; ctx.beginPath(); ctx.moveTo(b.left,H*.505);ctx.lineTo(b.right,H*.505);ctx.stroke();
+    // label markers
+    ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.font = `800 ${Math.max(10,W*.025)}px system-ui, sans-serif`; ctx.textAlign='center';
+    ctx.fillText('BASELINE', W/2, b.top - H*.027); ctx.fillText('BASELINE', W/2, b.bottom + H*.048);
+  }
+  function drawBall(x, y, r, alpha=1) {
+    ctx.save(); ctx.globalAlpha=alpha;
+    ctx.fillStyle='rgba(5,30,38,.27)'; ctx.beginPath(); ctx.ellipse(x+2*r*.18,y+r*.65,r*.95,r*.43,-.16,0,Math.PI*2);ctx.fill();
+    const g=ctx.createRadialGradient(x-r*.3,y-r*.35,r*.15,x,y,r*1.25); g.addColorStop(0,'#f6ffad');g.addColorStop(.7,'#d9ef55');g.addColorStop(1,'#a5c72e');
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='rgba(255,255,255,.92)';ctx.lineWidth=Math.max(1.3,r*.18);
+    ctx.beginPath();ctx.arc(x-r*.1,y,r*.73,-Math.PI*.72,Math.PI*.06);ctx.stroke();
+    ctx.beginPath();ctx.arc(x+r*.1,y,r*.73,Math.PI*.28,Math.PI*1.06);ctx.stroke();
+    ctx.restore();
+  }
+  function drawLandingRing(x,y,r,now) {
+    const pulse = phase === 'judge' ? 1 + Math.sin(now/125)*.09 : 1;
+    ctx.save();ctx.strokeStyle='rgba(255,255,255,.45)';ctx.lineWidth=1.6;ctx.setLineDash([3,5]);
+    ctx.beginPath();ctx.arc(x,y,r*1.8*pulse,0,Math.PI*2);ctx.stroke();ctx.setLineDash([]);ctx.restore();
+  }
+  function drawScene(now) {
+    if (!ctx || !W || !H) return;
+    drawCourt();
+    if (!current) return;
+    const r=ballRadius(); let x=current.x, y=current.y, alpha=1;
+    if (phase === 'flight') {
+      const t=Math.min(1, Math.max(0,(now-flightStart)/520));
+      x=current.startX+(current.x-current.startX)*t;
+      y=current.startY+(current.y-current.startY)*t - Math.sin(t*Math.PI)*H*.18;
+      alpha=.96;
+      // small flight trail
+      ctx.strokeStyle='rgba(239,255,151,.35)';ctx.lineWidth=r*.7;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(current.startX+(current.x-current.startX)*Math.max(0,t-.11),current.startY+(current.y-current.startY)*Math.max(0,t-.11)-Math.sin(Math.max(0,t-.11)*Math.PI)*H*.18);ctx.lineTo(x,y);ctx.stroke();
+    } else if (phase === 'judge' || phase === 'result') {
+      drawLandingRing(x,y,r,now);
+    }
+    drawBall(x,y,r,alpha);
+  }
+  function loop(now) {
+    if (phase !== 'flight' && phase !== 'judge') { drawScene(now); return; }
+    if (phase === 'flight' && now-flightStart >= 520) {
+      phase='judge'; current.landed=true; deadline=now+totalTime;
+      enableCalls(true);
+      $('phaseLabel').textContent='今すぐ判定！'; $('timerText').textContent=`${(totalTime/1000).toFixed(1)} 秒`;
+    }
+    if (phase === 'judge') {
+      const left=Math.max(0,deadline-now);
+      $('timerBar').style.width=`${left/totalTime*100}%`;
+      $('timerText').textContent=`${(left/1000).toFixed(1)} 秒`;
+      if (left <= 0) { timeoutCall(); drawScene(now); return; }
+    }
+    drawScene(now);
+    requestAnimationFrame(loop);
+  }
+  $('startButton').addEventListener('click', startGame);
+  $('againButton').addEventListener('click', startGame);
+  $('titleButton').addEventListener('click', () => { if(nextTimer) clearTimeout(nextTimer); phase='title'; current=null; showScreen('title'); });
+  $('backReplayButton').addEventListener('click', () => { phase = replayReturnPhase === 'end' ? 'end' : 'result'; showScreen(replayReturnPhase); if (replayReturnPhase === 'game') { resizeCanvas(); nextTimer = setTimeout(() => errors >= 3 ? endGame() : nextRound(), 250); } });
+  $('difficulty').addEventListener('change', () => {
+    const notes = { easy:'判定時間に余裕あり。まずはルールを覚えよう。', normal:'標準のスピード。正確さと反応のバランスが大切。', hard:'反応速度が重要。ライン際のボールが増えます。', pro:'最短1秒で判定。上級者向けのチャレンジです。' };
+    $('difficultyNote').textContent = notes[$('difficulty').value];
+  });
+  inButton.addEventListener('click', () => call(true));
+  outButton.addEventListener('click', () => call(false));
+  document.addEventListener('keydown', (e) => {
+    if (e.repeat) return;
+    if (phase === 'title' && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); startGame(); }
+    if (phase === 'judge') {
+      if (e.key.toLowerCase() === 'i' || e.key.toLowerCase() === 'j') call(true);
+      if (e.key.toLowerCase() === 'o' || e.key.toLowerCase() === 'f') call(false);
+    }
+  });
+  window.addEventListener('resize', () => { resizeCanvas(); if (phase === 'replay' && history.length) { const m=$('replayDescription').textContent.match(/(\d+)球目/); if(m){const item=history.find(h=>h.round===Number(m[1]));if(item)drawReplay(item);} } });
+})();
+</script>
+</body>
+</html>
